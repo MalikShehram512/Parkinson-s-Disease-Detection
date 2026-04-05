@@ -36,13 +36,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. Optimized Model Loading (The FIX) ---
+# --- 3. Load the NEW Deployable Model ---
 @st.cache_resource
 def load_my_model():
-    # This ensures the model is loaded only ONCE into memory
-    return tf.keras.models.load_model('parkinsons_model.h5')
+    # Make sure this matches the exact name of the file you just uploaded!
+    return tf.keras.models.load_model('parkinsons_model_deploy.h5')
 
-# Call the function once at the start
 model = load_my_model()
 
 # --- 4. Sidebar ---
@@ -78,41 +77,52 @@ with col2:
     else:
         if st.button("Run Diagnostic Analysis"):
             with st.spinner("Analyzing patterns..."):
-                # --- Preprocessing Steps ---
-                # A. Resize to 128x128 (matches your CNN training)
-                img = ImageOps.fit(image, (128, 128), Image.Resampling.LANCZOS)
-                
-                # B. Convert to RGB and Normalize
-                img_array = np.array(img.convert('RGB')) / 255.0
-                
-                # C. Expand Dimensions (The FIX for ValueError)
-                # Changes shape from (128, 128, 3) to (1, 128, 128, 3)
-                img_array = np.expand_dims(img_array, axis=0)
-                
-                # Small delay for UI feel
-                time.sleep(1.0)
-                
-                # --- Prediction ---
-                prediction = model.predict(img_array)
-                confidence = float(prediction[0][0])
-                
-                # --- Result Display ---
-                if confidence > 0.5:
-                    st.markdown(
-                        f'<div class="prediction-box" style="background-color: #ffdce0; color: #af1921;">'
-                        f'Parkinson\'s Indicators Detected</div>', 
-                        unsafe_allow_html=True
-                    )
-                    st.progress(confidence)
-                    st.write(f"Confidence Level: **{confidence*100:.2f}%**")
-                else:
-                    st.markdown(
-                        f'<div class="prediction-box" style="background-color: #dcffe4; color: #1e7e34;">'
-                        f'Healthy / No Indicators Detected</div>', 
-                        unsafe_allow_html=True
-                    )
-                    st.progress(1 - confidence)
-                    st.write(f"Confidence Level: **{(1-confidence)*100:.2f}%**")
+                try:
+                    # --- Preprocessing Steps for the New Model ---
+                    # 1. Resize to exactly 128x128 
+                    img = ImageOps.fit(image, (128, 128), Image.Resampling.LANCZOS)
+                    
+                    # 2. Convert to RGB (3 channels)
+                    img = img.convert('RGB')
+                    
+                    # 3. Convert to Array and Normalize (0 to 1)
+                    img_array = np.array(img) / 255.0
+                    
+                    # 4. Expand Dimensions from (128, 128, 3) to (1, 128, 128, 3)
+                    img_array = np.expand_dims(img_array, axis=0)
+                    
+                    # Small delay for UI feel
+                    time.sleep(1.0)
+                    
+                    # --- Prediction ---
+                    prediction = model.predict(img_array)
+                    
+                    # Because we used class_mode='categorical', the output is a list of 2 probabilities:
+                    # [Probability of Healthy (0), Probability of Parkinson's (1)]
+                    parkinsons_confidence = float(prediction[0][1])
+                    healthy_confidence = float(prediction[0][0])
+                    
+                    # --- Result Display ---
+                    if parkinsons_confidence > 0.5:
+                        st.markdown(
+                            f'<div class="prediction-box" style="background-color: #ffdce0; color: #af1921;">'
+                            f'Parkinson\'s Indicators Detected</div>', 
+                            unsafe_allow_html=True
+                        )
+                        st.progress(parkinsons_confidence)
+                        st.write(f"Confidence Level: **{parkinsons_confidence*100:.2f}%**")
+                    else:
+                        st.markdown(
+                            f'<div class="prediction-box" style="background-color: #dcffe4; color: #1e7e34;">'
+                            f'Healthy / No Indicators Detected</div>', 
+                            unsafe_allow_html=True
+                        )
+                        st.progress(healthy_confidence)
+                        st.write(f"Confidence Level: **{healthy_confidence*100:.2f}%**")
+                        
+                except Exception as e:
+                    st.error(f"Prediction Error: {e}")
+                    st.info("Please ensure your uploaded model is named 'parkinsons_model_deploy.h5'.")
 
 st.divider()
 st.caption("⚠️ **Disclaimer:** This tool is for preliminary screening only. It is not a substitute for professional medical diagnosis.")
