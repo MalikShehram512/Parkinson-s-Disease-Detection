@@ -35,6 +35,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- Load Model ---
+# Use the relative path (just the filename if it's in the root folder)
+model = tf.keras.models.load_model('parkinsons_model.h5')
 @st.cache_resource
 def load_model():
     # Ensure this matches your uploaded file name
