@@ -17,7 +17,7 @@ An AI-powered screening tool that uses **Convolutional Neural Networks (CNN)** t
 
 ## 🚀 Live Demo
 
-Check out the live application here: **[Insert Your Streamlit Cloud Link Here]**
+Check out the live application here: **[https://parkinson-s-disease-detection-bpsammj32zplpcknb6q2rm.streamlit.app/]**
 
 -----
 
